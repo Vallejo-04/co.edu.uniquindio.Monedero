@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monedero Virtual</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="acceso">
+
+<main class="acceso-card inicio-card">
+    <h1>Monedero Virtual</h1>
+    <p class="muted">Monederos, transferencias y un sistema de puntos que premia cada movimiento.</p>
+
+    <a class="opcion-acceso" th:href="@{/admin}">
+        <strong>Administrador</strong>
+        <span>Gestiona clientes, revisa reportes, la agenda de programadas y la integridad del sistema.</span>
+    </a>
+    <a class="opcion-acceso" th:href="@{/cliente}">
+        <strong>Cliente</strong>
+        <span>Entra con tu identificación para mover tu plata, canjear puntos y ver tus gastos.</span>
+    </a>
+
+</main>
+</body>
+</html>

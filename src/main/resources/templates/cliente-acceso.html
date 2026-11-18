@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acceso cliente</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="acceso">
+
+<main class="acceso-card">
+    <h1>Consultar cliente</h1>
+
+    <p class="alerta alerta-error" th:if="${error}" th:text="${error}"></p>
+
+    <form th:action="@{/cliente/perfil}" method="get" class="form">
+        <label>Identificación <input class="input" type="number" name="id" min="1" required autofocus></label>
+        <button class="btn btn-primario" type="submit">Ver mi monedero</button>
+    </form>
+
+    <div class="botones">
+        <form method="get" th:action="@{/cliente/registro}"><button class="btn" type="submit">Crear cuenta</button></form>
+        <form method="get" th:action="@{/}"><button class="btn" type="submit">Volver</button></form>
+    </div>
+</main>
+</body>
+</html>

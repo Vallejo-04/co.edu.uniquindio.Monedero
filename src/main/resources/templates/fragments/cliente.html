@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav th:fragment="pestanas(volver)" class="tabs"
+     th:with="base=${volver == 'admin'} ? '/admin/cliente/' + ${cliente.id()} + '/' : '/cliente/' + ${cliente.id()} + '/'">
+    <a th:href="@{${base + 'resumen'}}" th:classappend="${seccion == 'resumen'} ? 'activo'">Resumen</a>
+    <a th:href="@{${base + 'operaciones'}}" th:classappend="${seccion == 'operaciones'} ? 'activo'">Operaciones</a>
+    <a th:href="@{${base + 'historial'}}" th:classappend="${seccion == 'historial'} ? 'activo'">Historial</a>
+    <a th:href="@{${base + 'puntos'}}" th:classappend="${seccion == 'puntos'} ? 'activo'">Puntos</a>
+    <a th:href="@{${base + 'programadas'}}" th:classappend="${seccion == 'programadas'} ? 'activo'">Programadas</a>
+    <a th:href="@{${base + 'notificaciones'}}" th:classappend="${seccion == 'notificaciones'} ? 'activo'">
+        Notificaciones
+        <span class="contador contador-alerta" th:if="${cliente.notificacionesSinLeer() > 0}"
+              th:text="${cliente.notificacionesSinLeer()}">0</span>
+    </a>
+    <a th:href="@{${base + 'gastos'}}" th:classappend="${seccion == 'gastos'} ? 'activo'">Gastos</a>
+</nav>
+
+<section th:fragment="resumen(volver)" class="bloque">
+    <div class="stats">
+        <div class="stat">
+            <span>Saldo total</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(saldoTotal, 1, 'POINT', 2, 'COMMA')}">$ 0</strong>
+        </div>
+        <div class="stat">
+            <span>Puntos acumulados</span>
+            <strong th:text="${cliente.puntos()}">0</strong>
+        </div>
+        <div class="stat">
+            <span>Puntos disponibles</span>
+            <strong th:text="${cliente.puntosDisponibles()}">0</strong>
+        </div>
+        <div class="stat">
+            <span>Rango</span>
+            <strong th:text="${cliente.rango()}">BRONCE</strong>
+        </div>
+    </div>
+
+    <dl class="perfil-datos perfil-resumen">
+        <dt>Identificación</dt><dd th:text="${cliente.id()}">—</dd>
+        <dt>Correo</dt><dd th:text="${cliente.correo()}">—</dd>
+        <dt>Posición en el ranking</dt><dd th:text="${'#' + cliente.posicionRanking()}">#1</dd>
+        <dt>Siguiente rango</dt>
+        <dd th:text="${cliente.siguienteRango() != null} ? |${cliente.siguienteRango()} (faltan ${cliente.puntosParaSubir()} puntos)| : 'Ya tiene el rango máximo'">—</dd>
+    </dl>
+
+    <h3>Monederos</h3>
+    <div class="monederos" th:unless="${monederos.isEmpty()}">
+        <article class="monedero" th:each="m : ${monederos}">
+            <small th:text="${'MONEDERO #' + m.id()}">MONEDERO #1</small>
+            <strong th:text="${m.nombre()}">Ahorros</strong>
+            <span class="monedero-saldo"
+                  th:text="${'$ ' + #numbers.formatDecimal(m.saldo(), 1, 'POINT', 2, 'COMMA')}">$ 0</span>
+            <form th:if="${m.saldo() == 0}" method="post"
+                  th:action="@{/cliente/{id}/monedero/eliminar/{m}(id=${cliente.id()}, m=${m.id()})}"
+                  onsubmit="return confirm('¿Eliminar este monedero vacío?');">
+                <input type="hidden" name="volver" th:value="${volver}">
+                <button class="link-peligro" type="submit">Eliminar monedero</button>
+            </form>
+        </article>
+    </div>
+    <p class="vacio" th:if="${monederos.isEmpty()}">Todavía no hay monederos. Se crean en la pestaña Operaciones.</p>
+</section>
+
+<section th:fragment="operaciones(volver)" class="bloque">
+    <p class="nota">
+        Comisión: retiro 0,5 % · transferencia a otro cliente 1 %.
+        <span th:if="${descuentoRango > 0}" th:text="|Por el rango ${cliente.rango()} hay ${descuentoRango} % de descuento.|"></span>
+    </p>
+
+    <div class="formularios">
+        <form method="post" th:action="@{/cliente/{id}/monedero(id=${cliente.id()})}" class="form tarjeta">
+            <h3>Crear monedero</h3>
+            <input type="hidden" name="volver" th:value="${volver}">
+            <label>Nombre <input class="input" name="nombre" placeholder="Ej: Ahorros" required></label>
+            <button class="btn btn-primario" type="submit">Crear</button>
+        </form>
+
+        <th:block th:unless="${monederos.isEmpty()}">
+            <form method="post" th:action="@{/cliente/{id}/deposito(id=${cliente.id()})}" class="form tarjeta">
+                <h3>Depositar</h3>
+                <input type="hidden" name="volver" th:value="${volver}">
+                <label>Monedero
+                    <select class="input" name="idMonedero" required>
+                        <option th:each="m : ${monederos}" th:value="${m.id()}" th:text="${'#' + m.id() + ' · ' + m.nombre()}">#1</option>
+                    </select>
+                </label>
+                <label>Monto <input class="input" type="number" name="monto" min="0.01" step="0.01" required></label>
+                <label>Descripción <input class="input" name="descripcion" placeholder="Opcional"></label>
+                <button class="btn btn-primario" type="submit">Depositar</button>
+            </form>
+
+            <form method="post" th:action="@{/cliente/{id}/retiro(id=${cliente.id()})}" class="form tarjeta">
+                <h3>Retirar</h3>
+                <input type="hidden" name="volver" th:value="${volver}">
+                <label>Monedero
+                    <select class="input" name="idMonedero" required>
+                        <option th:each="m : ${monederos}" th:value="${m.id()}"
+                                th:text="${'#' + m.id() + ' · ' + m.nombre() + ' ($ ' + #numbers.formatDecimal(m.saldo(), 1, 'POINT', 2, 'COMMA') + ')'}">#1</option>
+                    </select>
+                </label>
+                <label>Monto <input class="input" type="number" name="monto" min="0.01" step="0.01" required></label>
+                <label>Categoría
+                    <select class="input" name="categoria">
+                        <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">OTROS</option>
+                    </select>
+                </label>
+                <label>Descripción <input class="input" name="descripcion" placeholder="Opcional"></label>
+                <button class="btn btn-primario" type="submit">Retirar</button>
+            </form>
+
+            <form method="post" th:action="@{/cliente/{id}/transferencia(id=${cliente.id()})}" class="form tarjeta">
+                <h3>Transferir</h3>
+                <input type="hidden" name="volver" th:value="${volver}">
+                <label>Desde
+                    <select class="input" name="idMonederoOrigen" required>
+                        <option th:each="m : ${monederos}" th:value="${m.id()}"
+                                th:text="${'#' + m.id() + ' · ' + m.nombre() + ' ($ ' + #numbers.formatDecimal(m.saldo(), 1, 'POINT', 2, 'COMMA') + ')'}">#1</option>
+                    </select>
+                </label>
+                <label>Hacia
+                    <select class="input" name="idMonederoDestino" required>
+                        <option value="" disabled selected>Elige un monedero</option>
+                        <option th:each="d : ${destinos}" th:value="${d.id()}"
+                                th:text="${'#' + d.id() + ' · ' + d.nombre() + ' — ' + (d.idCliente() == cliente.id() ? 'propio' : d.titular())}">#3</option>
+                    </select>
+                </label>
+                <label>Monto <input class="input" type="number" name="monto" min="0.01" step="0.01" required></label>
+                <label>Categoría
+                    <select class="input" name="categoria">
+                        <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">OTROS</option>
+                    </select>
+                </label>
+                <label>Descripción <input class="input" name="descripcion" placeholder="Opcional"></label>
+                <button class="btn btn-primario" type="submit">Transferir</button>
+            </form>
+        </th:block>
+
+        <form th:if="${ultimaReversible != null}" method="post"
+              th:action="@{/cliente/{id}/revertir(id=${cliente.id()})}" class="form tarjeta"
+              onsubmit="return confirm('¿Revertir la última transacción?');">
+            <h3>Revertir</h3>
+            <input type="hidden" name="volver" th:value="${volver}">
+            <p class="nota"
+               th:text="|Última transacción: #${ultimaReversible.id()} ${ultimaReversible.tipo()} de $ ${#numbers.formatDecimal(ultimaReversible.monto(), 1, 'POINT', 2, 'COMMA')}|">Última</p>
+            <button class="btn" type="submit">Revertir última transacción</button>
+        </form>
+    </div>
+</section>
+
+<section th:fragment="historial" class="bloque">
+    <div class="tabla-scroll" th:unless="${transacciones.isEmpty()}">
+        <table class="tabla">
+            <thead>
+            <tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Monederos</th><th>Descripción</th>
+                <th class="num">Comisión</th><th class="num">Puntos</th><th class="num">Monto</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${transacciones}" th:classappend="${t.esRevertida()} ? 'revertida'">
+                <td th:text="${t.id()}">1</td>
+                <td th:text="${#temporals.format(t.fecha(), 'dd/MM/yy HH:mm')}">15/11/26</td>
+                <td class="tipo">
+                    <span class="chip" th:text="${t.tipo()}">DEPOSITO</span>
+                    <span class="chip chip-revertida" th:if="${t.esRevertida()}">REVERTIDA</span>
+                </td>
+                <td th:switch="${t.tipo().name()}">
+                    <span th:case="'DEPOSITO'" th:text="${'→ #' + t.idMonederoDestino()}">→ #1</span>
+                    <span th:case="'RETIRO'" th:text="${'#' + t.idMonederoOrigen() + ' →'}">#1 →</span>
+                    <span th:case="*" th:text="${'#' + t.idMonederoOrigen() + ' → #' + t.idMonederoDestino()}">#1 → #2</span>
+                </td>
+                <td class="desc">
+                    <span th:text="${t.descripcion()}">Nómina</span>
+                    <small class="categoria" th:if="${t.tipo().name() != 'DEPOSITO'}" th:text="${t.categoria()}">OTROS</small>
+                </td>
+                <td class="num" th:text="${t.comision() > 0} ? ${'$ ' + #numbers.formatDecimal(t.comision(), 1, 'POINT', 2, 'COMMA')} : '—'">—</td>
+                <td class="num" th:text="${t.puntosGenerados() > 0} ? ${'+' + t.puntosGenerados()} : '—'">+0</td>
+                <td class="num"
+                    th:classappend="${t.esSalida()} ? 'negativo' : (${t.esEntrada()} ? 'positivo' : '')"
+                    th:text="${(t.esSalida() ? '− $ ' : (t.esEntrada() ? '+ $ ' : '↔ $ ')) + #numbers.formatDecimal(t.monto(), 1, 'POINT', 2, 'COMMA')}">$ 0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="vacio" th:if="${transacciones.isEmpty()}">Sin transacciones todavía.</p>
+</section>
+
+<section th:fragment="puntos(volver)" class="bloque">
+    <p class="nota">
+        <span th:text="|Rango ${cliente.rango()} con ${cliente.puntos()} puntos acumulados y ${cliente.puntosDisponibles()} disponibles para canjear.|">Rango</span>
+        <span th:if="${descuentoRango > 0}" th:text="|Ventajas: ${descuentoRango} % menos en comisiones y ${bonoPuntosRango} % de puntos extra.|"></span>
+    </p>
+
+    <h3>Canjear puntos</h3>
+    <div class="catalogo">
+        <article class="beneficio-card" th:each="b : ${catalogo}"
+                 th:classappend="${cliente.puntosDisponibles() < b.costoPuntos()} ? 'bloqueado'">
+            <span class="costo" th:text="${b.costoPuntos() + ' puntos'}">100 puntos</span>
+            <strong th:text="${b.nombre()}">Beneficio</strong>
+            <p th:text="${b.descripcion()}">Descripción</p>
+            <form method="post" th:action="@{/cliente/{id}/canjear(id=${cliente.id()})}" class="form-canje">
+                <input type="hidden" name="volver" th:value="${volver}">
+                <input type="hidden" name="tipo" th:value="${b.tipo()}">
+                <select class="input" name="idMonedero" th:if="${b.tipo().name() == 'BONO_SALDO'}" required>
+                    <option value="" disabled selected>¿A qué monedero?</option>
+                    <option th:each="m : ${monederos}" th:value="${m.id()}" th:text="${'#' + m.id() + ' · ' + m.nombre()}">#1</option>
+                </select>
+                <button class="btn" type="submit" th:disabled="${cliente.puntosDisponibles() < b.costoPuntos()}">Canjear</button>
+            </form>
+        </article>
+    </div>
+
+    <h3>Beneficios canjeados</h3>
+    <table class="tabla" th:unless="${beneficios.isEmpty()}">
+        <thead><tr><th>Beneficio</th><th>Canjeado</th><th>Vence</th><th>Estado</th></tr></thead>
+        <tbody>
+        <tr th:each="b : ${beneficios}">
+            <td th:text="${b.nombre()}">Beneficio</td>
+            <td th:text="${#temporals.format(b.fechaCanje(), 'dd/MM/yy')}">fecha</td>
+            <td th:text="${b.fechaVencimiento() != null} ? ${#temporals.format(b.fechaVencimiento(), 'dd/MM/yy')} : '—'">—</td>
+            <td th:text="${b.vigente()} ? 'Vigente' : (${b.fechaVencimiento() == null} ? 'Aplicado' : 'Vencido')">Vigente</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="vacio" th:if="${beneficios.isEmpty()}">Aún no ha canjeado beneficios.</p>
+
+    <h3>Movimientos de puntos</h3>
+    <table class="tabla" th:unless="${historialPuntos.isEmpty()}">
+        <thead><tr><th>Fecha</th><th>Motivo</th><th class="num">Acumulados</th><th class="num">Disponibles</th></tr></thead>
+        <tbody>
+        <tr th:each="mv : ${historialPuntos}">
+            <td th:text="${#temporals.format(mv.fecha(), 'dd/MM/yy HH:mm')}">fecha</td>
+            <td th:text="${mv.motivo()}">motivo</td>
+            <td class="num" th:text="${mv.cambioAcumulados() > 0} ? ${'+' + mv.cambioAcumulados()} : ${mv.cambioAcumulados()}">+0</td>
+            <td class="num" th:text="${mv.cambioDisponibles() > 0} ? ${'+' + mv.cambioDisponibles()} : ${mv.cambioDisponibles()}">+0</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="vacio" th:if="${historialPuntos.isEmpty()}">Sin movimientos de puntos.</p>
+</section>
+
+<section th:fragment="programadas(volver)" class="bloque">
+    <div class="formularios">
+        <form method="post" th:action="@{/cliente/{id}/programar(id=${cliente.id()})}" class="form tarjeta form-programar"
+              th:unless="${monederos.isEmpty()}">
+            <h3>Programar transacción</h3>
+            <input type="hidden" name="volver" th:value="${volver}">
+            <label>Tipo
+                <select class="input" name="tipo" data-tipo>
+                    <option th:each="tt : ${tiposTransaccion}" th:value="${tt}" th:text="${tt}">DEPOSITO</option>
+                </select>
+            </label>
+            <label data-para="RETIRO TRANSFERENCIA">Desde
+                <select class="input" name="idMonederoOrigen">
+                    <option th:each="m : ${monederos}" th:value="${m.id()}" th:text="${'#' + m.id() + ' · ' + m.nombre()}">#1</option>
+                </select>
+            </label>
+            <label data-para="DEPOSITO">Hacia
+                <select class="input" name="idMonederoDestino">
+                    <option th:each="m : ${monederos}" th:value="${m.id()}" th:text="${'#' + m.id() + ' · ' + m.nombre()}">#1</option>
+                </select>
+            </label>
+            <label data-para="TRANSFERENCIA">Hacia
+                <select class="input" name="idMonederoDestino" disabled>
+                    <option th:each="d : ${destinos}" th:value="${d.id()}"
+                            th:text="${'#' + d.id() + ' · ' + d.nombre() + ' — ' + (d.idCliente() == cliente.id() ? 'propio' : d.titular())}">#3</option>
+                </select>
+            </label>
+            <label>Monto <input class="input" type="number" name="monto" min="0.01" step="0.01" required></label>
+            <label data-para="RETIRO TRANSFERENCIA">Categoría
+                <select class="input" name="categoria">
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">OTROS</option>
+                </select>
+            </label>
+            <label>Fecha <input class="input" type="datetime-local" name="fecha" required></label>
+            <div class="fila">
+                <label>Frecuencia
+                    <select class="input" name="frecuencia">
+                        <option th:each="f : ${frecuencias}" th:value="${f}" th:text="${#strings.replace(f, '_', ' ')}">UNA VEZ</option>
+                    </select>
+                </label>
+                <label>Repeticiones <input class="input" type="number" name="repeticiones" min="0" placeholder="0 = sin límite"></label>
+            </div>
+            <label>Descripción <input class="input" name="descripcion" placeholder="Ej: Ahorro mensual"></label>
+            <button class="btn btn-primario" type="submit">Programar</button>
+        </form>
+
+        <div class="tarjeta lista-programadas">
+            <h3>Pendientes</h3>
+            <ul class="lista-simple" th:unless="${programadas.isEmpty()}">
+                <li th:each="p : ${programadas}">
+                    <strong th:text="${p.descripcion()}">Ahorro</strong>
+                    <small class="muted"
+                           th:text="|${p.tipo()} de $ ${#numbers.formatDecimal(p.monto(), 1, 'POINT', 2, 'COMMA')} · ${#strings.replace(p.frecuencia(), '_', ' ')} · próxima: ${#temporals.format(p.proximaEjecucion(), 'dd/MM/yy HH:mm')}|">detalle</small>
+                    <form method="post" th:action="@{/cliente/{id}/programada/cancelar/{p}(id=${cliente.id()}, p=${p.id()})}"
+                          onsubmit="return confirm('¿Cancelar esta programación?');">
+                        <input type="hidden" name="volver" th:value="${volver}">
+                        <button class="link-peligro" type="submit">Cancelar</button>
+                    </form>
+                </li>
+            </ul>
+            <p class="vacio" th:if="${programadas.isEmpty()}">No hay nada programado.</p>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.form-programar').forEach(function (form) {
+            var tipo = form.querySelector('[data-tipo]');
+            function actualizar() {
+                form.querySelectorAll('[data-para]').forEach(function (campo) {
+                    var aplica = campo.dataset.para.split(' ').indexOf(tipo.value) >= 0;
+                    campo.hidden = !aplica;
+                    campo.querySelectorAll('select, input').forEach(function (c) { c.disabled = !aplica; });
+                });
+            }
+            tipo.addEventListener('change', actualizar);
+            actualizar();
+        });
+    </script>
+</section>
+
+<section th:fragment="notificaciones(volver)" class="bloque">
+    <form method="post" th:action="@{/cliente/{id}/notificaciones/leidas(id=${cliente.id()})}"
+          th:if="${cliente.notificacionesSinLeer() > 0}">
+        <input type="hidden" name="volver" th:value="${volver}">
+        <button class="btn btn-auto" type="submit">Marcar todas como leídas</button>
+    </form>
+    <ul class="notificaciones" th:unless="${notificaciones.isEmpty()}">
+        <li th:each="n : ${notificaciones}" th:classappend="${!n.leida()} ? 'no-leida'">
+            <span class="chip" th:classappend="${'noti-' + #strings.toLowerCase(n.tipo())}"
+                  th:text="${#strings.replace(n.tipo(), '_', ' ')}">TIPO</span>
+            <span th:text="${n.mensaje()}">mensaje</span>
+            <small class="muted" th:text="${#temporals.format(n.fecha(), 'dd/MM HH:mm')}">fecha</small>
+        </li>
+    </ul>
+    <p class="vacio" th:if="${notificaciones.isEmpty()}">Sin notificaciones.</p>
+</section>
+
+<section th:fragment="gastos" class="bloque">
+    <div class="stats">
+        <div class="stat"><span>Gasto total</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(analisis.gastoTotal(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong></div>
+        <div class="stat"><span>Depositado</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(analisis.totalDepositado(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong></div>
+        <div class="stat"><span>Recibido de otros</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(analisis.totalRecibido(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong></div>
+        <div class="stat"><span>Comisiones pagadas</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(analisis.totalComisiones(), 1, 'POINT', 2, 'COMMA')}">$ 0</strong></div>
+    </div>
+
+    <h3>Gasto por categoría</h3>
+    <table class="tabla" th:unless="${analisis.gastosPorCategoria().isEmpty()}">
+        <thead><tr><th>Categoría</th><th class="num">Veces</th><th class="num">Total</th><th class="num">%</th></tr></thead>
+        <tbody>
+        <tr th:each="g : ${analisis.gastosPorCategoria()}">
+            <td th:text="${g.categoria()}">ALIMENTACION</td>
+            <td class="num" th:text="${g.cantidad()}">0</td>
+            <td class="num" th:text="${'$ ' + #numbers.formatDecimal(g.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</td>
+            <td class="num" th:text="${g.porcentaje() + ' %'}">0 %</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="vacio" th:if="${analisis.gastosPorCategoria().isEmpty()}">Todavía no hay gastos.</p>
+
+    <h3>Patrones de gasto</h3>
+    <table class="tabla" th:unless="${analisis.habitosEntreCategorias().isEmpty()}">
+        <thead><tr><th>Después de</th><th>Gasta en</th><th class="num">Veces</th></tr></thead>
+        <tbody>
+        <tr th:each="h : ${analisis.habitosEntreCategorias()}">
+            <td th:text="${h.origen()}">A</td>
+            <td th:text="${h.destino()}">B</td>
+            <td class="num" th:text="${h.cantidad()}">1</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="vacio" th:if="${analisis.habitosEntreCategorias().isEmpty()}">Hacen falta al menos dos gastos.</p>
+
+    <h3>Movimiento entre monederos</h3>
+    <table class="tabla" th:unless="${analisis.flujoEntreMonederos().isEmpty()}">
+        <thead><tr><th>Desde</th><th>Hacia</th><th class="num">Veces</th><th class="num">Total</th></tr></thead>
+        <tbody>
+        <tr th:each="f : ${analisis.flujoEntreMonederos()}">
+            <td th:text="${f.origen()}">A</td>
+            <td th:text="${f.destino()}">B</td>
+            <td class="num" th:text="${f.cantidad()}">1</td>
+            <td class="num" th:text="${'$ ' + #numbers.formatDecimal(f.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="vacio" th:if="${analisis.flujoEntreMonederos().isEmpty()}">Sin movimientos.</p>
+</section>
+
+</body>
+</html>

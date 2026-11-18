@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registro de cliente</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="acceso">
+
+<main class="acceso-card">
+    <h1>Crea tu cuenta</h1>
+
+    <form th:action="@{/cliente/guardar}" method="post" class="form">
+        <label>Identificación <input class="input" type="number" name="id" min="1" required autofocus></label>
+        <label>Nombre completo <input class="input" type="text" name="nombre" required></label>
+        <label>Correo <input class="input" type="email" name="correo" required></label>
+        <button class="btn btn-primario" type="submit">Registrarme</button>
+    </form>
+
+    <form method="get" th:action="@{/cliente}"><button class="btn" type="submit">Ya tengo cuenta</button></form>
+</main>
+</body>
+</html>

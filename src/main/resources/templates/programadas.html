@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transacciones programadas</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: topbarAdmin('programadas')}"></header>
+<div th:replace="~{fragments/layout :: alertas}"></div>
+
+<main class="pagina">
+    <div class="saludo">
+        <h1>Transacciones programadas</h1>
+        <form method="post" th:action="@{/admin/programadas/procesar}">
+            <button class="btn btn-primario" type="submit">Procesar ahora</button>
+        </form>
+    </div>
+    <p class="nota">Ordenadas por fecha: la primera es la próxima en ejecutarse. El sistema las revisa solo cada 30 segundos.</p>
+
+    <section class="panel">
+        <div class="tabla-scroll">
+            <table class="tabla" th:unless="${programadas.isEmpty()}">
+                <thead><tr><th>Orden</th><th>Próxima ejecución</th><th>Cliente</th><th>Qué</th><th>Monederos</th>
+                    <th>Frecuencia</th><th class="num">Monto</th><th>Hechas / fallidas</th><th>Último resultado</th></tr></thead>
+                <tbody>
+                <tr th:each="p, i : ${programadas}">
+                    <td th:text="${i.count}">1</td>
+                    <td th:text="${#temporals.format(p.proximaEjecucion(), 'dd/MM/yy HH:mm')}">fecha</td>
+                    <td th:text="${p.nombreCliente()}">Nombre</td>
+                    <td class="desc"><span class="chip" th:text="${p.tipo()}">TIPO</span> <span th:text="${p.descripcion()}">desc</span></td>
+                    <td th:text="|${p.idMonederoOrigen() > 0 ? '#' + p.idMonederoOrigen() : ''} → ${p.idMonederoDestino() > 0 ? '#' + p.idMonederoDestino() : ''}|">#1 → #2</td>
+                    <td th:text="${#strings.replace(p.frecuencia(), '_', ' ') + (p.sinLimite() ? '' : ' · quedan ' + p.ejecucionesRestantes())}">MENSUAL</td>
+                    <td class="num" th:text="${'$ ' + #numbers.formatDecimal(p.monto(), 1, 'POINT', 0, 'COMMA')}">$ 0</td>
+                    <td th:text="|${p.vecesEjecutada()} / ${p.vecesFallida()}|">0 / 0</td>
+                    <td class="desc muted" th:text="${p.ultimoResultado()}">Pendiente</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="vacio" th:if="${programadas.isEmpty()}">La cola está vacía.</p>
+    </section>
+</main>
+</body>
+</html>

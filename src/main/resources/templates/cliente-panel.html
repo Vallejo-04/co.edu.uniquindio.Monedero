@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mi monedero</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: topbarCliente}"></header>
+<div th:replace="~{fragments/layout :: alertas}"></div>
+
+<main class="pagina">
+    <section class="panel">
+        <div class="saludo cabecera-cliente">
+            <h2 class="info-titulo" th:text="${'Hola, ' + #strings.substringBefore(cliente.nombre() + ' ', ' ')}">Hola, Juan</h2>
+            <span class="rango" th:classappend="${'rango-' + #strings.toLowerCase(cliente.rango())}" th:text="${cliente.rango()}">BRONCE</span>
+        </div>
+
+        <nav th:replace="~{fragments/cliente :: pestanas('cliente')}"></nav>
+
+        <th:block th:switch="${seccion}">
+            <th:block th:case="'operaciones'"><section th:replace="~{fragments/cliente :: operaciones('cliente')}"></section></th:block>
+            <th:block th:case="'historial'"><section th:replace="~{fragments/cliente :: historial}"></section></th:block>
+            <th:block th:case="'puntos'"><section th:replace="~{fragments/cliente :: puntos('cliente')}"></section></th:block>
+            <th:block th:case="'programadas'"><section th:replace="~{fragments/cliente :: programadas('cliente')}"></section></th:block>
+            <th:block th:case="'notificaciones'"><section th:replace="~{fragments/cliente :: notificaciones('cliente')}"></section></th:block>
+            <th:block th:case="'gastos'"><section th:replace="~{fragments/cliente :: gastos}"></section></th:block>
+            <th:block th:case="*"><section th:replace="~{fragments/cliente :: resumen('cliente')}"></section></th:block>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>

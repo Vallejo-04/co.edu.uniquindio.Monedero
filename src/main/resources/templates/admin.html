@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: topbarAdmin('consola')}"></header>
+<div th:replace="~{fragments/layout :: alertas}"></div>
+
+<main class="dashboard dashboard-admin">
+
+    <aside class="panel panel-clientes">
+        <div class="panel-titulo">
+            <h2>Clientes</h2>
+            <span class="contador" th:text="${clientes.size()}">0</span>
+        </div>
+
+        <input id="filtro" class="input" type="search" placeholder="Buscar cliente…">
+
+        <ul class="lista-clientes" id="listaClientes">
+            <li th:each="c : ${clientes}" th:attr="data-texto=${#strings.toLowerCase(c.nombre() + ' ' + c.id())}">
+                <a th:href="@{/admin/cliente/{id}(id=${c.id()})}"
+                   th:classappend="${cliente != null and cliente.id() == c.id()} ? 'activo'">
+                    <span class="avatar" th:text="${#strings.substring(c.nombre(), 0, 1)}">J</span>
+                    <span class="cliente-info">
+                        <strong th:text="${c.nombre()}">Juan Pérez</strong>
+                        <small th:text="${c.id()}">123456</small>
+                    </span>
+                    <span class="rango" th:classappend="${'rango-' + #strings.toLowerCase(c.rango())}" th:text="${c.rango()}">BRONCE</span>
+                </a>
+            </li>
+            <li class="vacio" th:if="${clientes.isEmpty()}">No hay clientes registrados</li>
+        </ul>
+
+        <details class="nuevo-cliente">
+            <summary class="btn btn-primario">+ Nuevo cliente</summary>
+            <form th:action="@{/admin/cliente}" method="post" class="form">
+                <label>Identificación <input class="input" type="number" name="id" min="1" required></label>
+                <label>Nombre <input class="input" type="text" name="nombre" required></label>
+                <label>Correo <input class="input" type="email" name="correo" required></label>
+                <button class="btn btn-primario" type="submit">Crear cliente</button>
+            </form>
+        </details>
+    </aside>
+
+    <section class="panel panel-info">
+
+        <th:block th:if="${cliente == null}">
+            <h2 class="info-titulo">Resumen general</h2>
+            <div class="stats">
+                <div class="stat"><span>Clientes</span><strong th:text="${estado.clientes()}">0</strong></div>
+                <div class="stat"><span>Monederos</span><strong th:text="${estado.monederos()}">0</strong></div>
+                <div class="stat"><span>Dinero en el sistema</span>
+                    <strong th:text="${'$ ' + #numbers.formatDecimal(estado.dineroEnElSistema(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong></div>
+                <div class="stat"><span>Transacciones</span><strong th:text="${estado.transacciones()}">0</strong></div>
+            </div>
+
+            <h3>Clientes con más puntos</h3>
+            <table class="tabla tabla-corta">
+                <thead><tr><th>#</th><th>Cliente</th><th>Rango</th><th class="num">Puntos</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${ranking}">
+                    <td th:text="${r.posicion()}">1</td>
+                    <td th:text="${r.nombre()}">Nombre</td>
+                    <td th:text="${r.rango()}">ORO</td>
+                    <td class="num" th:text="${r.puntos()}">0</td>
+                </tr>
+                </tbody>
+            </table>
+            <p class="nota">Selecciona un cliente de la lista para ver su información.</p>
+        </th:block>
+
+        <th:block th:if="${cliente != null}">
+            <div class="saludo cabecera-cliente">
+                <h2 class="info-titulo" th:text="${cliente.nombre()}">Juan Pérez</h2>
+                <span class="rango" th:classappend="${'rango-' + #strings.toLowerCase(cliente.rango())}" th:text="${cliente.rango()}">BRONCE</span>
+                <form class="empujar-derecha" th:action="@{/admin/cliente/eliminar/{id}(id=${cliente.id()})}" method="post"
+                      onsubmit="return confirm('¿Eliminar este cliente? Se borran sus monederos y programaciones.');">
+                    <button class="btn btn-peligro btn-auto" type="submit">Eliminar cliente</button>
+                </form>
+            </div>
+
+            <nav th:replace="~{fragments/cliente :: pestanas('admin')}"></nav>
+
+            <th:block th:switch="${seccion}">
+                <th:block th:case="'operaciones'"><section th:replace="~{fragments/cliente :: operaciones('admin')}"></section></th:block>
+                <th:block th:case="'historial'"><section th:replace="~{fragments/cliente :: historial}"></section></th:block>
+                <th:block th:case="'puntos'"><section th:replace="~{fragments/cliente :: puntos('admin')}"></section></th:block>
+                <th:block th:case="'programadas'"><section th:replace="~{fragments/cliente :: programadas('admin')}"></section></th:block>
+                <th:block th:case="'notificaciones'"><section th:replace="~{fragments/cliente :: notificaciones('admin')}"></section></th:block>
+                <th:block th:case="'gastos'"><section th:replace="~{fragments/cliente :: gastos}"></section></th:block>
+                <th:block th:case="*"><section th:replace="~{fragments/cliente :: resumen('admin')}"></section></th:block>
+            </th:block>
+        </th:block>
+    </section>
+</main>
+
+<script>
+    document.getElementById('filtro').addEventListener('input', function () {
+        var q = this.value.trim().toLowerCase();
+        document.querySelectorAll('#listaClientes li[data-texto]').forEach(function (li) {
+            li.hidden = q !== '' && li.dataset.texto.indexOf(q) < 0;
+        });
+    });
+</script>
+</body>
+</html>

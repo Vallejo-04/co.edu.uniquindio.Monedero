@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reportes</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: topbarAdmin('reportes')}"></header>
+
+<main class="pagina">
+    <h1>Reportes</h1>
+
+    <div class="stats">
+        <div class="stat"><span>Dinero en el sistema</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(reporte.dineroEnElSistema(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong>
+            <small class="muted" th:text="|${reporte.clientes()} clientes · ${reporte.monederos()} monederos|">0</small></div>
+        <div class="stat"><span>Transferido entre clientes</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(reporte.volumenTransferido(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong></div>
+        <div class="stat"><span>Comisiones cobradas</span>
+            <strong th:text="${'$ ' + #numbers.formatDecimal(reporte.comisionesCobradas(), 1, 'POINT', 2, 'COMMA')}">$ 0</strong></div>
+        <div class="stat"><span>Transacciones activas</span>
+            <strong th:text="${reporte.transaccionesActivas()}">0</strong></div>
+    </div>
+
+    <div class="dos-columnas">
+        <section class="panel">
+            <h3>Ranking por puntos</h3>
+            <table class="tabla">
+                <thead><tr><th>#</th><th>Cliente</th><th>Rango</th><th class="num">Puntos</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${ranking}">
+                    <td th:text="${r.posicion()}">1</td>
+                    <td th:text="${r.nombre()}">Nombre</td>
+                    <td><span class="rango" th:classappend="${'rango-' + #strings.toLowerCase(r.rango())}" th:text="${r.rango()}">ORO</span></td>
+                    <td class="num" th:text="${r.puntos()}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <h3>Clientes por rango</h3>
+            <div class="rangos">
+                <div>
+                    <span class="rango rango-platino" th:text="|PLATINO (${platino.size()})|">PLATINO</span>
+                    <ul class="lista-compacta">
+                        <li th:each="r : ${platino}" th:text="|${r.nombre()} · ${r.puntos()} pts|">Nombre</li>
+                        <li class="muted" th:if="${platino.isEmpty()}">Nadie</li>
+                    </ul>
+                </div>
+                <div>
+                    <span class="rango rango-oro" th:text="|ORO (${oro.size()})|">ORO</span>
+                    <ul class="lista-compacta">
+                        <li th:each="r : ${oro}" th:text="|${r.nombre()} · ${r.puntos()} pts|">Nombre</li>
+                        <li class="muted" th:if="${oro.isEmpty()}">Nadie</li>
+                    </ul>
+                </div>
+                <div>
+                    <span class="rango rango-plata" th:text="|PLATA (${plata.size()})|">PLATA</span>
+                    <ul class="lista-compacta">
+                        <li th:each="r : ${plata}" th:text="|${r.nombre()} · ${r.puntos()} pts|">Nombre</li>
+                        <li class="muted" th:if="${plata.isEmpty()}">Nadie</li>
+                    </ul>
+                </div>
+                <div>
+                    <span class="rango rango-bronce" th:text="|BRONCE (${bronce.size()})|">BRONCE</span>
+                    <ul class="lista-compacta">
+                        <li th:each="r : ${bronce}" th:text="|${r.nombre()} · ${r.puntos()} pts|">Nombre</li>
+                        <li class="muted" th:if="${bronce.isEmpty()}">Nadie</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="panel">
+        <h3>Transferencias entre clientes</h3>
+
+        <p class="alerta alerta-aviso" th:if="${!reporte.cicloDetectado().isEmpty()}">
+            Hay dinero que da la vuelta entre clientes:
+            <strong><th:block th:each="nombre : ${reporte.cicloDetectado()}"><span th:text="${nombre}">A</span> → </th:block><span th:text="${reporte.cicloDetectado().get(0)}">A</span></strong>
+        </p>
+
+        <div class="tres-columnas">
+            <div>
+                <h4>Transferencias</h4>
+                <table class="tabla" th:unless="${reporte.transferenciasEntreClientes().isEmpty()}">
+                    <thead><tr><th>De</th><th>A</th><th class="num">Veces</th><th class="num">Total</th></tr></thead>
+                    <tbody>
+                    <tr th:each="f : ${reporte.transferenciasEntreClientes()}">
+                        <td th:text="${f.origen()}">A</td><td th:text="${f.destino()}">B</td>
+                        <td class="num" th:text="${f.cantidad()}">1</td>
+                        <td class="num" th:text="${'$ ' + #numbers.formatDecimal(f.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p class="vacio" th:if="${reporte.transferenciasEntreClientes().isEmpty()}">Sin transferencias.</p>
+            </div>
+            <div>
+                <h4>Quiénes más envían</h4>
+                <ol class="ranking">
+                    <li th:each="m : ${reporte.quienesMasEnvian()}">
+                        <span th:text="${m.nombre()}">Nombre</span>
+                        <strong th:text="${'$ ' + #numbers.formatDecimal(m.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong>
+                    </li>
+                </ol>
+            </div>
+            <div>
+                <h4>Quiénes más reciben</h4>
+                <ol class="ranking">
+                    <li th:each="m : ${reporte.quienesMasReciben()}">
+                        <span th:text="${m.nombre()}">Nombre</span>
+                        <strong th:text="${'$ ' + #numbers.formatDecimal(m.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</strong>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <div class="dos-columnas">
+        <section class="panel">
+            <h3>Gasto por categoría (todos los clientes)</h3>
+            <table class="tabla" th:unless="${reporte.gastosPorCategoria().isEmpty()}">
+                <thead><tr><th>Categoría</th><th class="num">Veces</th><th class="num">Total</th><th class="num">%</th></tr></thead>
+                <tbody>
+                <tr th:each="g : ${reporte.gastosPorCategoria()}">
+                    <td th:text="${g.categoria()}">X</td>
+                    <td class="num" th:text="${g.cantidad()}">0</td>
+                    <td class="num" th:text="${'$ ' + #numbers.formatDecimal(g.total(), 1, 'POINT', 0, 'COMMA')}">$ 0</td>
+                    <td class="num" th:text="${g.porcentaje() + ' %'}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="panel">
+            <h3>Patrones de gasto</h3>
+            <table class="tabla" th:unless="${reporte.habitosEntreCategorias().isEmpty()}">
+                <thead><tr><th>Después de</th><th>Gasta en</th><th class="num">Veces</th></tr></thead>
+                <tbody>
+                <tr th:each="h : ${reporte.habitosEntreCategorias()}">
+                    <td th:text="${h.origen()}">A</td><td th:text="${h.destino()}">B</td>
+                    <td class="num" th:text="${h.cantidad()}">1</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</main>
+</body>
+</html>

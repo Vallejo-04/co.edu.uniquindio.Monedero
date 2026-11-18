@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header th:fragment="topbarAdmin(activo)" class="topbar">
+    <a class="marca" th:href="@{/}">Monedero Virtual</a>
+    <nav class="menu">
+        <a th:href="@{/admin}" th:classappend="${activo == 'consola'} ? 'activo'">Consola</a>
+        <a th:href="@{/admin/programadas}" th:classappend="${activo == 'programadas'} ? 'activo'">Programadas</a>
+        <a th:href="@{/admin/reportes}" th:classappend="${activo == 'reportes'} ? 'activo'">Reportes</a>
+        <a th:href="@{/admin/integridad}" th:classappend="${activo == 'integridad'} ? 'activo'">Integridad</a>
+    </nav>
+    <span class="topbar-rol">Administrador</span>
+</header>
+
+<header th:fragment="topbarCliente" class="topbar">
+    <span class="marca">Monedero Virtual</span>
+    <span class="topbar-rol">
+        <span th:text="${cliente.nombre()}">Juan</span> ·
+        <a th:href="@{/cliente}">Salir</a>
+    </span>
+</header>
+
+<div th:fragment="alertas" class="alertas">
+    <p class="alerta alerta-ok" th:if="${mensaje}" th:text="${mensaje}"></p>
+    <p class="alerta alerta-error" th:if="${error}" th:text="${error}"></p>
+</div>
+
+</body>
+</html>

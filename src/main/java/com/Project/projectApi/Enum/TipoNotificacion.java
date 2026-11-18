@@ -1,0 +1,13 @@
+package com.Project.projectApi.Enum;
+
+public enum TipoNotificacion {
+
+    SALDO_BAJO,
+    TRANSFERENCIA_RECIBIDA,
+    RECORDATORIO_PROGRAMADA,
+    PROGRAMADA_EJECUTADA,
+    PROGRAMADA_FALLIDA,
+    CAMBIO_DE_RANGO,
+    BENEFICIO,
+    REVERSION
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Integridad</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: topbarAdmin('integridad')}"></header>
+
+<main class="pagina">
+    <div class="saludo">
+        <h1>Verificación de integridad</h1>
+        <form method="get" th:action="@{/admin/integridad}"><button class="btn btn-primario btn-auto" type="submit">Verificar de nuevo</button></form>
+    </div>
+
+    <p class="alerta" th:classappend="${reporte.todoCorrecto} ? 'alerta-ok' : 'alerta-error'">
+        <strong th:text="${reporte.todoCorrecto} ? 'Todo cuadra.' : |Se encontraron ${reporte.problemas.size()} problemas.|">Todo cuadra</strong>
+        <span th:text="|Revisión hecha el ${#temporals.format(reporte.fecha, 'dd/MM/yyyy HH:mm:ss')} en ${#numbers.formatDecimal(reporte.duracionMicros / 1000.0, 1, 'POINT', 2, 'COMMA')} ms sobre ${estado.transacciones()} transacciones.|">detalle</span>
+    </p>
+
+    <section class="panel">
+        <h3>Revisiones</h3>
+        <table class="tabla">
+            <thead><tr><th>Revisión</th><th>Qué comprueba</th><th class="num">Elementos</th><th>Resultado</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${reporte.revisiones}">
+                <td th:text="${r.nombre()}">Nombre</td>
+                <td class="desc" th:text="${r.descripcion()}">desc</td>
+                <td class="num" th:text="${r.elementosRevisados()}">0</td>
+                <td><span class="chip" th:classappend="${r.aprobada()} ? 'chip-ok' : 'chip-revertida'"
+                          th:text="${r.aprobada()} ? 'CORRECTO' : 'CON ERRORES'">OK</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel" th:if="${!reporte.todoCorrecto}">
+        <h3>Problemas encontrados</h3>
+        <ul class="lista-simple">
+            <li th:each="p : ${reporte.problemas}" th:text="${p}">problema</li>
+        </ul>
+    </section>
+
+</main>
+</body>
+</html>
